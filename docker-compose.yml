@@ -8,30 +8,32 @@ services:
             - '-config.file=/etc/prometheus/prometheus.yml'
         ports:
             - '9090:9090'
+        expose: 
+            - 9090
+        networks:
+        - grafana_prometheus_network
 
+    grafana:
+        image: grafana/grafana:6.7.2
+        container_name: grafana
+        volumes:
+        - grafana_data:/var/lib/grafana
+        - ./grafana/provisioning:/etc/grafana/provisioning
+        environment:
+        - GF_SECURITY_ADMIN_USER=admin
+        - GF_SECURITY_ADMIN_PASSWORD=password
+        - GF_USERS_ALLOW_SIGN_UP=false
+        restart: unless-stopped
+        ports:
+            - '3000:3000'
+        expose: 
+        - 3000
+        networks:
+        - grafana_prometheus_network
 
+volumes:
+  grafana_data:                  
 
-
-# version: '3'
-
-# services:
-#   postgres-db:
-#     image: postgres:latest
-#     container_name: postgres_finman
-#     environment:
-#       - POSTGRES_PASSWORD=secret
-#       - POSTGRES_USER=postgres
-#       - POSTGRES_DB=finances
-#     ports:
-#       - '5432:5432'
-#     volumes:
-#       - database_postgres:/var/lib/postgresql/data
-#     networks:
-#       - finman
-
-# volumes:
-#   database_postgres:                  
-
-# networks:
-#   finman:
-#     driver: bridge
+networks:
+  grafana_prometheus_network:
+    driver: bridge
