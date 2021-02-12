@@ -7,4 +7,4 @@ The web server will act as a prometheus exporter. It will read a file and check 
 And if there's a new sticker it will start collecting stock price for that sticker and emit a prometheus metrics. 
 Currently the plan is to leverage prometheus push gateway to publish stock metrics
 
--- Web Server 
+-- web-server
