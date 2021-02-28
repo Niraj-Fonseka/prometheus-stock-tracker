@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -95,18 +94,19 @@ type ResponseQuote struct {
 func recordMetrics() {
 	go func() {
 		for {
-			g.Set(fetchStockPrice())
-			time.Sleep(2 * time.Second)
+			regular, post := fetchStockPrice()
+			g.Set(regular)
+			gtwo.Set(post)
+			time.Sleep(3 * time.Second)
 		}
 	}()
 }
 
-func fetchStockPrice() float64 {
-	fmt.Println("Fetching stock price")
+func fetchStockPrice() (float64, float64) {
 	resp, err := http.Get("https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols=TSLA")
 	if err != nil {
 		log.Println(err)
-		return 0.0
+		return 0.0, 0.0
 	}
 
 	defer resp.Body.Close()
@@ -115,7 +115,7 @@ func fetchStockPrice() float64 {
 
 	if err != nil {
 		log.Println(err)
-		return 0.0
+		return 0.0, 0.0
 	}
 
 	var qresp ResponseQuote
@@ -123,16 +123,21 @@ func fetchStockPrice() float64 {
 
 	if err != nil {
 		log.Println(err)
-		return 0.0
+		return 0.0, 0.0
 	}
 
-	return qresp.QuoteResponse.Result[0].RegularMarketPrice
+	return qresp.QuoteResponse.Result[0].RegularMarketPrice, qresp.QuoteResponse.Result[0].PostMarketPrice
 }
 
 var (
 	g = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "random_float_metric",
-		Help: "The total number of processed events",
+		Name: "regular_market",
+		Help: "regular market value",
+	})
+
+	gtwo = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "post_market",
+		Help: "post market market value",
 	})
 )
 
