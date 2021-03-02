@@ -95,8 +95,11 @@ func recordMetrics() {
 	go func() {
 		for {
 			regular, post := fetchStockPrice()
-			g.Set(regular)
-			gtwo.Set(post)
+			if post == 0 {
+				g.Set(regular)
+			} else {
+				g.Set(post)
+			}
 			time.Sleep(3 * time.Second)
 		}
 	}()
@@ -133,11 +136,6 @@ var (
 	g = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "regular_market",
 		Help: "regular market value",
-	})
-
-	gtwo = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "post_market",
-		Help: "post market market value",
 	})
 )
 
