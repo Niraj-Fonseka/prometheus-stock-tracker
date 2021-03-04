@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -91,22 +93,32 @@ type ResponseQuote struct {
 	} `json:"quoteResponse"`
 }
 
-func recordMetrics() {
-	go func() {
-		for {
-			regular, post := fetchStockPrice()
-			if post == 0 {
-				g.Set(regular)
-			} else {
-				g.Set(post)
+func recordMetrics(tickers []Ticker) {
+
+	for _, t := range tickers {
+		go func(t string) {
+
+			g := promauto.NewGauge(prometheus.GaugeOpts{
+				Name: fmt.Sprintf("stock_tracker_%s", strings.ToLower(t)),
+				Help: "metric for tracking stock values",
+			})
+
+			for {
+				regular, post := fetchStockPrice(t)
+				if post == 0 {
+					g.Set(regular)
+				} else {
+					g.Set(post)
+				}
+				time.Sleep(3 * time.Second)
 			}
-			time.Sleep(3 * time.Second)
-		}
-	}()
+		}(t.Ticker)
+	}
+
 }
 
-func fetchStockPrice() (float64, float64) {
-	resp, err := http.Get("https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols=TSLA")
+func fetchStockPrice(ticker string) (float64, float64) {
+	resp, err := http.Get(fmt.Sprintf("https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols=%s", ticker))
 	if err != nil {
 		log.Println(err)
 		return 0.0, 0.0
@@ -132,15 +144,29 @@ func fetchStockPrice() (float64, float64) {
 	return qresp.QuoteResponse.Result[0].RegularMarketPrice, qresp.QuoteResponse.Result[0].PostMarketPrice
 }
 
-var (
-	g = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "regular_market",
-		Help: "regular market value",
-	})
-)
+func loadData(tickers *[]Ticker) {
+	content, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		log.Fatal("Unable to read in config file ", err)
+	}
+
+	err = json.Unmarshal(content, tickers)
+
+	if err != nil {
+		log.Fatal("Unable to load in the data in to the file")
+	}
+}
+
+type Ticker struct {
+	Ticker string `json:"ticker"`
+}
 
 func main() {
-	recordMetrics()
+
+	var tickers []Ticker
+	loadData(&tickers)
+
+	recordMetrics(tickers)
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.ListenAndServe(":2112", nil)

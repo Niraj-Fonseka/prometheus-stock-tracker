@@ -1,7 +1,46 @@
 [
     {
         
-        "ticker" : "TSLA",
-        "purchase_price" : 164.00
+        "ticker" : "TSLA"
+    },
+    {
+        
+        "ticker" : "VTI"
+    },
+    {
+        
+        "ticker" : "LUV"
+    },
+    {
+        
+        "ticker" : "WORK"
+    },
+    {
+        
+        "ticker" : "AZN"
+    },
+    {
+        
+        "ticker" : "IUSG"
+    },
+    {
+        
+        "ticker" : "LIT"
+    },
+    {
+        
+        "ticker" : "ICLN"
+    },
+    {
+        
+        "ticker" : "LAC"
+    },
+    {
+        
+        "ticker" : "LIACF"
+    },
+    {
+        
+        "ticker" : "AMC"
     }
 ]
