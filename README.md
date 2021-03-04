@@ -1,1 +1,1 @@
-prometheus-stock-tracker
+### Prometheus Stock Exporter
