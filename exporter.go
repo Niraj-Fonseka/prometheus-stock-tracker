@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -93,35 +92,43 @@ type ResponseQuote struct {
 	} `json:"quoteResponse"`
 }
 
+type Ticker struct {
+	Ticker string `json:"ticker"`
+}
+
+//fetch stocks every 5 seconds
 func recordMetrics(tickers []Ticker) {
+
+	g := promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: fmt.Sprintf("stock_tracker"),
+		Help: "metric for tracking stock values",
+	},
+		[]string{"ticker"},
+	)
 
 	for _, t := range tickers {
 		go func(t string) {
 
-			g := promauto.NewGauge(prometheus.GaugeOpts{
-				Name: fmt.Sprintf("stock_tracker_%s", strings.ToLower(t)),
-				Help: "metric for tracking stock values",
-			})
-
 			for {
 				regular, post := fetchStockPrice(t)
-				if post == 0 {
-					g.Set(regular)
+				if post == 0 { //if the post values is 0 its regular mkt time
+					g.WithLabelValues(t).Set(regular)
 				} else {
-					g.Set(post)
+					g.WithLabelValues(t).Set(post)
 				}
-				time.Sleep(3 * time.Second)
+				time.Sleep(5 * time.Second) //running every 5 seconds
 			}
 		}(t.Ticker)
 	}
 
 }
 
+//fetch price for a symbol
 func fetchStockPrice(ticker string) (float64, float64) {
 	resp, err := http.Get(fmt.Sprintf("https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols=%s", ticker))
 	if err != nil {
 		log.Println(err)
-		return 0.0, 0.0
+		return -1, -1
 	}
 
 	defer resp.Body.Close()
@@ -130,7 +137,7 @@ func fetchStockPrice(ticker string) (float64, float64) {
 
 	if err != nil {
 		log.Println(err)
-		return 0.0, 0.0
+		return -1, -1
 	}
 
 	var qresp ResponseQuote
@@ -138,9 +145,10 @@ func fetchStockPrice(ticker string) (float64, float64) {
 
 	if err != nil {
 		log.Println(err)
-		return 0.0, 0.0
+		return -1, -1
 	}
 
+	//if the stock price is less than $5 the PostMarketPrice field does not exist
 	return qresp.QuoteResponse.Result[0].RegularMarketPrice, qresp.QuoteResponse.Result[0].PostMarketPrice
 }
 
@@ -155,10 +163,6 @@ func loadData(tickers *[]Ticker) {
 	if err != nil {
 		log.Fatal("Unable to load in the data in to the file")
 	}
-}
-
-type Ticker struct {
-	Ticker string `json:"ticker"`
 }
 
 func main() {
