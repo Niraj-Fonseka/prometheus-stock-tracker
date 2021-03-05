@@ -7,7 +7,7 @@
 ---
 * Run it with docker (recomended) 
     - `docker build -t stock-expoter . `
-    - `docker run -p 2112:2112 stock-expoter`
+    - `docker run -d -p 2112:2112 stock-expoter`
 
 * The metrics should be visible on `http://localhost:2112/metrics`
 * Example output
