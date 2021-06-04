@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stocktracker
+  namespace: tools
+spec:
+  selector:
+    matchLabels:
+      app: stocktracker
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: stocktracker
+    spec:
+     containers:
+     - name: stocktracker
+       image: dockerfonseka/stock-expoter:latest
+       ports:
+       - containerPort: 2112
